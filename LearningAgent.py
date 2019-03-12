@@ -23,8 +23,8 @@ class LearningAgent:
         # Initializes the q_net given the dimensions of the file location.
         if qnet_location is None:
             self.qnet = models.Sequential()
-            self.q_net.add(layers.Dense(9, activation='relu', input_shape=(1,)))
-            for current_layer in [9, 45, 45, 45, 9]:
+            self.q_net.add(layers.Dense(21, activation='relu', input_shape=(1,)))
+            for current_layer in [21, 42, 42, 42, 25505]:
                 self.q_net.add(layers.Dense(current_layer, activation='relu'))
             self.q_net.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
@@ -163,7 +163,7 @@ class LearningAgent:
                         break
                 # Checks if the action is to take all the camels from the market.
                 elif currentactionattemp == 12:
-                    if currentboard.takecamels(player)
+                    if currentboard.takecamels(player):
                         self.previousactionmade = 12
                         break
                 # Otherwise, the chosen action is to exchange goods and camels for goods.
