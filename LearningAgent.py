@@ -2,53 +2,47 @@ import numpy as np
 import pandas as pd
 import random
 import math
-from keras import models
-from keras import layers
-from keras import load_model
+
 
 # Note: in total, there is 6 actions for buying a single good, there is 6 actions for selling a type of good, 1 to buy
 # all the camels, and 25492 for all the exchange combinations.
 class LearningAgent:
-    def __init__(self, qnet_location=None, exchange_action_table_location=None):
-        self.qnet_learning_rate = 0.2
-        self.qnet_discount_factor = 0.9
+    def __init__(self, q_matrix_location=None, exchange_action_table_location=None):
+        self.learning_rate = 0.2
+        self.discount_factor = 0.99
         self.epsilon = 0.9
         self.temperature = 4
         self.exchange_action_table = None
 
-        self.previousactionmade = None
-        self.previousactionprobabilities = None
-        self.previousstate = None
+        self.previous_action_made = None
+        self.previous_state = None
+
+        # Probability of each action using Softmax. This array is defined to prevent multiple initializations.
+        self.soft_max_prob = np.zeros(25505)
 
         # Initializes the q_net given the dimensions of the file location.
-        if qnet_location is None:
-            self.qnet = models.Sequential()
-            self.q_net.add(layers.Dense(21, activation='relu', input_shape=(1,)))
-            for current_layer in [21, 42, 42, 42, 25505]:
-                self.q_net.add(layers.Dense(current_layer, activation='relu'))
-            self.q_net.compile(optimizer='adam',
-                  loss='sparse_categorical_crossentropy',
-                  metrics=['accuracy'])
+        if q_matrix_location is None:
+            self.q_table = dict()
         else:
-            self.loadstate(qnet_location)
+            self.load_state(q_matrix_location)
 
         # Initializes the exchange action table by either recreating it or using the file location.
         if exchange_action_table_location is None:
-            self.createexchangeactiontable()
+            self.create_exchange_action_table()
         else:
             self.exchange_action_table = np.mat(pd.read_csv(exchange_action_table_location, sep=',', header=None),
                                                 dtype='int')
 
     # Saves the q_net model to a given file location.
-    def savestate(self, locationstring):
-        self.qnet.save(locationstring)
+    def save_state(self, location_string):
+        np.save(location_string, self.q_table)
 
     # Loads the q_net model from a given file location.
-    def loadstate(self, locationstring):
-        self.qnet = load_model(locationstring)
+    def load_state(self, location_string):
+        self.q_table = np.load(location_string)
 
     # Creates a table of all the possible legal exchange combinations.
-    def createexchangeactiontable(self):
+    def create_exchange_action_table(self):
         self.exchange_action_table = np.zeros((25492, 7))
         count = 0
         for leather in range(-5, 6):
@@ -71,112 +65,112 @@ class LearningAgent:
                                             count += 1
 
     # Gives a reward for the previous state and action performed by the learning agent.
-    def givereward(self, reward):
-        if self.previousactionmade is not None:
-            self.previousactionprobabilities[self.previousactionmade] += self.qnet_learning_rate * (
-                        reward - self.previousactionprobabilities[self.previousactionmade])
-            self.qnet.train_on_batch(self.previousstate,self.previousactionprobabilities)
-
+    def give_reward(self, reward):
+        if self.previous_state is not None:
+            self.q_table[self.previous_state][self.previous_action_made] += self.learning_rate * reward
 
     # Takes a given board and the given players turn and calculates the current state of the player.
-    def calculatestate(self, currentboard, player):
-        # The state is calculated by using the number of cards remaining, the cards in hand, the cards in the
-        # market, and the number of each of the good tokens.
-        # The values have been standardized to keep a consistent range between 0 and 1.
-        output = np.zeros(21)
+    @staticmethod
+    def calculate_state(current_board, player):
+        # The state is calculated by using the cards in hand, the cards in the market, and the number of each of the
+        # good tokens.
+        output = ''
 
-        for currenttypeinhand in range(6):
-            output[currenttypeinhand] = currentboard.playerHands[player][currenttypeinhand] / 7
-        self.previousstate[6] = currentboard.playerHands[player][6] / 11
-        for currenttypeinmarket in range(7):
-            output[currenttypeinmarket + 7] = currentboard.market[currenttypeinmarket]
-        output[14] = len(currentboard.deck) / 55
+        for current_type_in_hand in range(7):
+            output += str(current_board.playerHands[player][current_type_in_hand])
+
+        for current_type_in_market in range(7):
+            output += str(current_board.market[current_type_in_market])
 
         # This hasn't been implemented yet in the game so this needs to be updated.
-        for currentgoodtype in range(6):
-            output[15 + currentgoodtype] = 0.42
+        for current_good_type in range(6):
+            output += str(current_good_type)
         return output
 
+    # Attempts to perform an action on the board given the index of the action and returns whether is succeeded or not.
+    def attempt_action(self, current_board, player, action_index):
+
+        # Checks if the action is to take a good from the market.
+        if action_index < 6:
+                action_succeeded = current_board.takegood(player, action_index)
+
+        # Checks if the action is to sells goods from hand.
+        elif action_index < 12:
+            action_succeeded = current_board.sell(player, action_index - 6)
+
+        # Checks if the action is to take all the camels from the market.
+        elif action_index == 12:
+            action_succeeded = current_board.takecamels(player)
+
+        # Otherwise, the chosen action is to exchange goods and camels for goods.
+        else:
+            action_succeeded = current_board.exchangegoods(player, self.exchange_action_table[action_index - 13])
+
+        return action_succeeded
 
     # Takes a given board and the given players turn and performs a move based on the q_net using epsilon greedy
     # learning.
-    def makemove(self, currentboard, player):
-        self.previousstate = self.calculatestate(currentboard, player)
+    def make_move(self, current_board, player):
+        self.previous_state = self.calculate_state(current_board, player)
 
-        # Calculate the expected reward for each action given the current state.
-        self.previousactionprobabilities = self.qnet.predict(self.previousstate)[0]
+        if self.previous_state not in self.q_table:
+            self.q_table[self.previous_state] = np.zeros(25505) + 0.1
+        expected_rewards = self.q_table[self.previous_state]
 
         # Decides to do the non-greedy move epsilon percent of the time.
         if random.choices([0, 1], [1 - self.epsilon, self.epsilon], k=1)[0] == 1:
-            actionattemptorder = np.random.choice(4, 4, replace=False)
-            for currentattempt in actionattemptorder:
-                if currentattempt == 0:
-                    # Trying to take a good from the market. This action can't fail unless the hand is full.
-                    self.previousactionmade = random.randint(0,5)
-                    if currentboard.takegood(player, self.previousactionmade):
-                        break
-                elif currentattempt == 1:
-                    # Trying to sell gods from hand.  This action can fail if the player doesn't have enough of the
-                    # good.
-                    sellattemptorder = np.random.choice(6, 6, replace=False)
-                    temp = True
-                    for sellattemp in sellattemptorder:
-                        if currentboard.sell(player,sellattemp):
-                            temp = False
-                            self.previousactionmade = sellattemp + 6
-                            break
-                    if not temp:
-                        break
 
-                elif currentattempt == 2:
-                    # Trying to take all the camels. This action can't fail unless the market has no camels.
-                    self.previousactionmade = 12
-                    if currentboard.takecamels(player):
-                        break
+            # For the non-greedy move, Softmax is used to decide the move.
+            self.soft_max_prob = np.zeros(25505)
 
+            for current_reward in range(25505):
+                if self.temperature == 0:
+                    self.soft_max_prob[current_reward] = expected_rewards[current_reward]
                 else:
-                    # Trying to exchange goods and camels for goods.
-                    exchangeattemptorder = np.random.choice(25492, 25492, replace=False)
-                    temp = True
-                    for exchangeattemp in exchangeattemptorder:
-                        if currentboard.exchangegoods(player,self.exchange_action_table[exchangeattemp]):
-                            temp = False
-                            self.previousactionmade = exchangeattemp + 13
-                            break
-                    if not temp:
-                        break
+                    try:
+                        self.soft_max_prob[current_reward] = math.exp(expected_rewards[current_reward]/self.temperature)
+                    # The exponential function can overflow which is being caught and the value is being approximated.
+                    except Exception:
+                        if expected_rewards[current_reward] > 0:
+                            self.soft_max_prob[current_reward] = 1000
+                        elif expected_rewards[current_reward] == 0:
+                            self.soft_max_prob[current_reward] = 1
+                        else:
+                            self.soft_max_prob[current_reward] = 0.01
+
+            # Normalizes the array to get the probability of picking each action then creates a permutation based on the
+            # the probability of picking each action.
+            chosen_permutation = np.random.choice(25505, 25505, p=self.soft_max_prob / self.soft_max_prob.sum(),
+                                                  replace=False)
+
+            # Keeps attempting actions till one works.
+            for action_being_attempted in  chosen_permutation:
+                if self.attempt_action(current_board, player, action_being_attempted):
+                    self.previous_action_made = action_being_attempted
+                    break
+
         else:
             # Chooses the greed action.
 
             # Orders the actions based on their value.
-            ordered_largest = np.argpartition(self.previousactionprobabilities)[-1:]
-            for currentactionattemp in ordered_largest:
-                # Checks if the action is to take a good from the market.
-                if currentactionattemp < 6:
-                    if currentboard.takegood(player, urrentactionattemp):
-                        self.previousactionmade = currentactionattemp
-                        break
-                # Checks if the action is to sells goods from hand.
-                elif currentactionattemp < 12:
-                    if currentboard.sell(player, currentactionattemp - 6):
-                        self.previousactionmade = currentactionattemp
-                        break
-                # Checks if the action is to take all the camels from the market.
-                elif currentactionattemp == 12:
-                    if currentboard.takecamels(player):
-                        self.previousactionmade = 12
-                        break
-                # Otherwise, the chosen action is to exchange goods and camels for goods.
-                else:
-                    if currentboard.exchangegoods(player, self.exchange_action_table[currentactionattemp - 13]):
-                        self.previousactionmade = currentactionattemp
-                        break
+            ordered_largest = np.argpartition(expected_rewards)[-1:]
 
-        # Update the value for performing that action in the now previous state.
-        update_value = self.qnet_learning_rate * (reward + (self.qnet_discount_factor * np.amax(
-            self.qnet.predict(self.calculatestate(currentboard, player))[0])) -
-                                                  self.previousactionprobabilities[self.previousactionmade])
-        self.previousactionprobabilities[self.previousactionmade] += update_value
-        self.qnet.train_on_batch(self.previousstate,self.previousactionprobabilities)
-        self.previousactionprobabilities -= update_value
+            # Attempts best actions till one works and records which one succeeded.
+            for current_action_attempt in ordered_largest:
+                if self.attempt_action(current_board, player, current_action_attempt):
+                    self.previous_action_made = current_action_attempt
+                    break
+
+        # Updates the expected value using the new state.
+        new_state = self.calculate_state(current_board, player)
+        if new_state not in self.q_table:
+            self.q_table[new_state] = np.zeros(25505) + 0.1
+            top_expected_reward = 0.1
+        else:
+            top_expected_reward = np.amax(self.q_table[new_state])
+
+        # Updates the expected value in the previous state.
+        self.q_table[self.previous_state][self.previous_action_made] += self.learning_rate * (
+                    (self.discount_factor * top_expected_reward) - self.q_table[self.previous_state][
+                     self.previous_action_made])
 
