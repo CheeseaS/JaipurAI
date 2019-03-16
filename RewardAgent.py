@@ -68,6 +68,8 @@ def getCard(hand, market, tokens):
 # check swap value
 def SwapCards(hand, market, tokens, cardNo):
     maxScore = 0
+    bestSwap = -1
+    GTS = False
     # determine cards to swap
     validSwaps = []
     for i in range (0,6):
@@ -77,16 +79,42 @@ def SwapCards(hand, market, tokens, cardNo):
     for j in validSwaps:
         temphand = copy.deepcopy(hand)
         #print(temphand)
-        if (cardNo + market[j]) < 8:
-            temphand[j] = temphand[j] + market[j]
-            print(temphand)
-            tempScore = scoreHand(temphand, tokens)
-            print(tempScore)
+
+        temphand[j] = temphand[j] + market[j]
+
+        tempScore = scoreHand(temphand, tokens)
+        if tempScore > maxScore:
+            if (cardNo + market[j]) > 7:
+                GTS = True
+            maxScore = tempScore
+            bestSwap = j
+
+    if bestSwap == -1:
+        return (0,0)
+    print(maxScore,bestSwap,GTS)
+
+    #all swaps can be done by camels/
+    if not GTS and hand[6] > market[bestSwap]:
+        qty = market[bestSwap]
+        #print(qty)
+        temphand[6] -= qty
+    print(temphand)
+    #handsize check
+    #find cards to swap
     #break swaps into cases, swap < camel and swap > camel
     # hand > 7
 
 
+    #needed GTS swap
+        #find excess number
+        #find goods to offset excess
+        #use camels to offset the rest
+    #goods swap
+        #find number of goods to swap for bestSwap
+            #sum goods from 0-6 until
 
+
+#need swap format
 
 
 
