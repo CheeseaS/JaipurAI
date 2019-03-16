@@ -16,6 +16,15 @@ class Game:
         for i in self.bTokens:
             random.shuffle(i)
 
+        self.gtokens = [
+            [1, 1, 1, 1, 1, 1, 2, 3, 4],
+            [1, 1, 2, 2, 3, 3, 5],
+            [1, 1, 2, 2, 3, 3, 5],
+            [5, 5, 5, 5, 5],
+            [5, 5, 5, 6, 6],
+            [5, 5, 5, 7, 7]
+        ]
+
         self.playerHands = [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
         self.playerScores = [0, 0]
         self.playerBTScore = [0, 0]
