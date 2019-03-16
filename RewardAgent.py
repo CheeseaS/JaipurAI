@@ -1,32 +1,63 @@
 #import Game
-
+import copy
 
 # reward based agent
 def GenerateMove(hand, market, tokens):
 
 
     handscore = scoreHand(hand,tokens)
+    print(market)
+    print(hand)
+    handScore = handscore
+    getScore = getCard(hand,market,tokens)
     print(handscore)
+    print(getScore)
     return "foo"
 
-
+# check score in hand
 def scoreHand(hand, tokens):
     #print(tokens)
-    print(hand)
+    #print(hand)
     maxScore = 0
+    # for each good in hand:
     for i in range (0,6):
+        sum = 0
         if hand[i] != 0:
             if (tokens[i]):
-                sum = 0
-                stSz = len(tokens[i]) -1
+                stSz = len(tokens[i]) - 1
+                # check current point value for good
                 for j in range(0,hand[i]):
-                    sum += tokens[i][(stSz -j)]
+
+                    sum += tokens[i][(stSz - j)]
+            #print (hand[i])
+            if hand[i] == 3:
+                #print("+2")
+                sum += 2
+            if hand[i] == 4:
+                #print("+5")
+                sum += 5
+            if hand[i] == 5:
+                #print("+9")
+                sum += 9
+            #print(sum)
             if sum > maxScore:
                 maxScore = sum
     return maxScore
-# check score in hand
-# for each good in hand:
-# check current point value for good
+
+def getCard(hand, market, tokens):
+    maxScore = (0,0)
+    for i in range(0,6):
+        if market[i] != 0:
+            temphand = copy.deepcopy(hand)
+            temphand[i] +=1
+            #print(temphand)
+            tempScore = scoreHand(temphand,tokens)
+            if tempScore > maxScore[0]:
+                maxScore = (tempScore,i)
+    return maxScore
+
+
+
 # if bonus value applies, add value
 # handscore = max(goodVal)
 
