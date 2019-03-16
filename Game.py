@@ -10,24 +10,23 @@ class Game:
                      6, 6, 6, 6, 6, 6, 6, 6]
         random.shuffle(self.deck)
 
-        self.bTokens = [[],
-                        [],
-                        []]
+        self.gTokens = [[1, 1, 1, 1, 1, 1, 2, 3, 4],
+                        [1, 1, 2, 2, 3, 3, 3],
+                        [1, 1, 2, 2, 3, 3, 3],
+                        [5, 5, 5, 5, 5],
+                        [5, 5, 5, 6, 6],
+                        [5, 5, 5, 7, 7]]
+        for i in self.gTokens:
+            random.shuffle(i)
+
+        self.bTokens = [[1, 1, 2, 2, 2, 3, 3],
+                        [4, 4, 5, 5, 6, 6],
+                        [8, 8, 9, 10, 10]]
         for i in self.bTokens:
             random.shuffle(i)
 
-        self.gtokens = [
-            [1, 1, 1, 1, 1, 1, 2, 3, 4],
-            [1, 1, 2, 2, 3, 3, 5],
-            [1, 1, 2, 2, 3, 3, 5],
-            [5, 5, 5, 5, 5],
-            [5, 5, 5, 6, 6],
-            [5, 5, 5, 7, 7]
-        ]
-
         self.playerHands = [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]]
         self.playerScores = [0, 0]
-        self.playerBTScore = [0, 0]
 
         for i in range(5):
             self.playerHands[0][self.deck.pop()] += 1
@@ -44,11 +43,15 @@ class Game:
         if pos > 2:
             minamnt = 2
 
-        if self.playerHands[player][pos] < minamnt:
+        if self.playerHands[player][pos] < minamnt or pos == 6:
             return False
 
-        if self.playerHands[player][pos] > 2:
-            self.playerBTScore[player] += self.bTokens[self.playerHands[player][pos] - 2].pop()
+        for i in self.playerHands[pos]:
+            if self.gTokens[pos]:
+                self.playerScores += self.gTokens[pos].pop()
+
+        if self.playerHands[player][pos] > 2 and [self.playerHands[player][pos] - 2]:
+            self.playerScores[player] += self.bTokens[self.playerHands[player][pos] - 2].pop()
 
         self.playerScores[player] += self.playerHands[player][pos]
         self.playerHands[player][pos] = 0
@@ -56,11 +59,12 @@ class Game:
         return True
 
     def takecamels(self, player):
-        for i in range(self.market[6]):
-            self.market[self.deck.pop()] += 1
+        camels = self.market[6]
         self.playerHands[player][6] += self.market[6]
         self.market[6] = 0
-
+        for i in range(camels):
+            if self.deck:
+                self.market[self.deck.pop()] += 1
         return True
 
     def takegood(self, player, pos):
@@ -72,7 +76,8 @@ class Game:
         if self.market[pos] > 0 and tmp < 5:
             self.playerHands[player][pos] += 1
             self.market[pos] -= 1
-            self.market[self.deck.pop()] += 1
+            if self.deck:
+                self.market[self.deck.pop()] += 1
             return True
 
         return False
@@ -99,11 +104,3 @@ class Game:
                 self.playerHands[player][i] += goods[i]
 
         return validexchange
-
-
-
-
-
-
-
-
