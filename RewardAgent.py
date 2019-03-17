@@ -3,26 +3,46 @@ import copy
 
 # reward based agent
 def GenerateMove(hand, market, tokens):
-    #print(hand)
-    #print(market)
     #handscore = max(goodVal)
-    handScore = scoreHand(hand,tokens)
+
+    getScore = (0,0)
+    swapScore = (0,0)
+    scoreMat = [-1 , -1, -1, -1, -1]
     handSz = 0
-    getScore = 0
-    swapscore = 0
     for i in range(0,6):
         handSz += hand[i]
-    #print(cardNo)
+    scoreMat[0] = scoreHand(hand,tokens)
     # check valid moves
     if handSz < 7:
-        getScore = getCard(hand,market,tokens)
-
+        getScore = getCard(hand, market, tokens)
+        scoreMat[1] = getScore[0]
     if handSz > 1:
         swapScore = SwapCards(hand, market, tokens)
-    print (getScore)
-    print (swapScore)
+        scoreMat[2] = swapScore[0]
+    sell = -1
+    most = 0
+    for i in range(5,-1,-1):
+        if hand[i] > most:
+            sell = i
+            most = hand[i]
+    scoreMat[4] = hand[6]
 
-    return "foo"
+
+    move = scoreMat.index(max(scoreMat))
+    print (move)
+    if move == 1:
+        return (move,getScore[1])
+    if move == 2:
+        return (move,swapScore[1])
+    if move == 3 or move == 0:
+       return (move, sell)
+    if move == 4:
+        return 7
+
+
+
+
+    #return "foo"
 
 # check score in hand
 def scoreHand(hand, tokens):
@@ -130,7 +150,6 @@ def overLimit(swap, hand, handSz, getting):
     handDiff = handSz - 7
     i = 0
     while (handDiff > 0) and (i < 7):
-        #print(i, handDiff, getting)
         if i == getting:
             i += 1
         else:
@@ -175,20 +194,17 @@ def simpleSwap(swap, hand, getting):
                 good = hand[i]
                 if good <= 0:
                     i += 1
-
                     continue
                 if good < remaining:
                     swap[i] = -good
                     remaining -= good
                     i += 1
-
                     continue
                 if good >= remaining:
                     swap[i] = -remaining
                     remaining = 0
 
 
-    #print (swap)
 # if (market[i] >= 2)
 
 # camels + goods[!max]
