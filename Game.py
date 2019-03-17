@@ -72,11 +72,11 @@ class Game:
         # Grab a goods token for each good sold
         for i in range(self.playerHands[player][pos]):
             if self.gTokens[pos]:
-                self.playerScores += self.gTokens[pos].pop()
+                self.playerScores[player] += self.gTokens[pos].pop()
 
         # If they are selling 3 or more then they get BONUS TOKENS!!! YAY
         if self.playerHands[player][pos] > 2 and [self.playerHands[player][pos] - 2]:
-            self.playerBTScores[player] += self.bTokens[self.playerHands[player][pos] - 2].pop()
+            self.playerBTScores[player] += self.bTokens[self.playerHands[player][pos] - 3].pop()
 
         self.playerHands[player][pos] = 0
 
@@ -84,6 +84,8 @@ class Game:
 
     # Moves all of the camels in the market into the player's hand (herd)
     def takecamels(self, player):
+        if self.market[6] == 0:
+            return False
         camels = self.market[6]
         self.playerHands[player][6] += self.market[6]
         self.market[6] = 0
@@ -97,7 +99,7 @@ class Game:
     def takegood(self, player, pos):
         tmp = 0
         # count the number of cards already in the user's hand, they can't have more that 7 non-camel cards
-        for i in self.playerHands[player]:
+        for i in range(6):
             # camels don't count
             if i != 6:
                 tmp += self.playerHands[player][i]

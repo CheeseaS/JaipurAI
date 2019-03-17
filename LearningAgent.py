@@ -8,10 +8,10 @@ import math
 # all the camels, and 25492 for all the exchange combinations.
 class LearningAgent:
     def __init__(self, q_matrix_location=None, exchange_action_table_location=None):
-        self.learning_rate = 0.2
+        self.learning_rate = 0.4
         self.discount_factor = 0.99
         self.epsilon = 0.9
-        self.temperature = 4
+        self.temperature = 3
         self.exchange_action_table = None
 
         self.previous_action_made = None
@@ -35,11 +35,12 @@ class LearningAgent:
 
     # Saves the q_net model to a given file location.
     def save_state(self, location_string):
-        np.save(location_string, self.q_table)
+        np.save(location_string,self.q_table)
 
     # Loads the q_net model from a given file location.
     def load_state(self, location_string):
-        self.q_table = np.load(location_string)
+        self.q_table = np.load(location_string)[()]
+
 
     # Creates a table of all the possible legal exchange combinations.
     def create_exchange_action_table(self):
@@ -104,7 +105,7 @@ class LearningAgent:
 
         # Otherwise, the chosen action is to exchange goods and camels for goods.
         else:
-            action_succeeded = current_board.exchangegoods(player, self.exchange_action_table[action_index - 13])
+            action_succeeded = current_board.exchangegood(player, np.array(self.exchange_action_table[action_index - 13])[0])
 
         return action_succeeded
 
@@ -144,7 +145,7 @@ class LearningAgent:
                                                   replace=False)
 
             # Keeps attempting actions till one works.
-            for action_being_attempted in  chosen_permutation:
+            for action_being_attempted in chosen_permutation:
                 if self.attempt_action(current_board, player, action_being_attempted):
                     self.previous_action_made = action_being_attempted
                     break
@@ -153,7 +154,7 @@ class LearningAgent:
             # Chooses the greed action.
 
             # Orders the actions based on their value.
-            ordered_largest = np.argpartition(expected_rewards)[-1:]
+            ordered_largest = (-expected_rewards).argsort()
 
             # Attempts best actions till one works and records which one succeeded.
             for current_action_attempt in ordered_largest:
