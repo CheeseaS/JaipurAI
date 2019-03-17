@@ -1,18 +1,37 @@
-from multiprocessing import Pool, Manager
 from Game import Game
 from LearningAgent import LearningAgent
-
 
 def run_game(current_agent):
     current_game = Game()
 
     while True:
         current_agent.make_move(current_game,0)
-        if current_game.isGameOver():
+        if current_game.isgameover():
+            current_agent.give_reward(10000 * (current_game.playerScores[0] + current_game.playerBTScores[0]))
             break
         current_agent.make_move(current_game,1)
-        if current_game.isGameOver():
+        if current_game.isgameover():
+            current_agent.give_reward(10000 * (current_game.playerScores[1] + current_game.playerBTScores[1]))
             break
+
+    if current_game.playerHands[0][6] > current_game.playerHands[1][6]:
+        current_game.playerBTScores[0] += 5
+    elif current_game.playerHands[0][6] < current_game.playerHands[1][6]:
+        current_game.playerBTScores[1] += 5
+
+    first_player_score = current_game.playerScores[0] + current_game.playerBTScores[0]
+    second_player_score = current_game.playerScores[1] + current_game.playerBTScores[1]
+    if first_player_score > second_player_score:
+        return first_player_score, second_player_score, 0
+    elif first_player_score < second_player_score:
+        return first_player_score, second_player_score, 1
+    else:
+        if current_game.playerBTScores[0] > current_game.playerBTScores[1]:
+            return first_player_score, second_player_score, 0
+        elif current_game.playerBTScores[0] < current_game.playerBTScores[1]:
+            return first_player_score, second_player_score, 1
+        else:
+            return first_player_score, second_player_score, 2
 
 
 def run_batch(location_string, result_string, batch_size):
@@ -27,11 +46,7 @@ def run_batch(location_string, result_string, batch_size):
     current_agent.save_state(result_string)
     return batch_average, winners
 
-jobs = (['test.csv','first_run.csv',100], ['test.csv','second_run.csv',100])
 
-def pool_handler():
-    p = Pool(2)
-    return p.map(run_batch,jobs)
-
-if __name__ == '__main__':
-    print(pool_handler())
+current_agent = LearningAgent(q_matrix_location='saved_agent.csv.npy',exchange_action_table_location='exchange_translation_matrix.csv')
+print(run_game(current_agent))
+current_agent.save_state('saved_agent.csv')
