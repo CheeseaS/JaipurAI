@@ -158,3 +158,19 @@ class Game:
             return True
 
         return False
+
+    # returns the players hand
+    def gethand(self, player):
+        return self.playerHands[player]
+
+    # returns the market
+    def getmarket(self):
+        return self.market
+
+    # return goods tokens
+    def getgtokens(self):
+        return self.gTokens
+
+    # return score
+    def getscore(self,player):
+        return self.playerScores[player]

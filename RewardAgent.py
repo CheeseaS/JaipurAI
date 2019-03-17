@@ -4,42 +4,45 @@ import copy
 # reward based agent
 def GenerateMove(hand, market, tokens):
     #handscore = max(goodVal)
-
+    print (hand)
     getScore = (0,0)
     swapScore = (0,0)
-    scoreMat = [-1 , -1, -1, -1, -1]
+    scoreMat = [-1 , -1, -1, -1]
     handSz = 0
     for i in range(0,6):
         handSz += hand[i]
-    scoreMat[0] = scoreHand(hand,tokens)
+    handScore = scoreHand(hand,tokens)
     # check valid moves
     if handSz < 7:
         getScore = getCard(hand, market, tokens)
-        scoreMat[1] = getScore[0]
+        scoreMat[0] = getScore[0]
     if handSz > 1:
         swapScore = SwapCards(hand, market, tokens)
-        scoreMat[2] = swapScore[0]
+        if swapScore[1] == [0,0,0,0,0,0,0]:
+            scoreMat[1] = -1
+        else:
+            scoreMat[1] = swapScore[0]
     sell = -1
     most = 0
     for i in range(5,-1,-1):
         if hand[i] > most:
             sell = i
             most = hand[i]
-    scoreMat[4] = hand[6]
-
-
+    scoreMat[3] = hand[6]
+    if handScore[1] >2 and hand[handScore[1]]:
+        sell = -1
+    scoreMat[2] = sell
+    #print(scoreMat)
     move = scoreMat.index(max(scoreMat))
-    print (move)
-    if move == 1:
+    #print (move)
+    if move == 0:
         return (move,getScore[1])
-    if move == 2:
+    if move == 1:
         return (move,swapScore[1])
-    if move == 3 or move == 0:
+    if move == 2:
        return (move, sell)
-    if move == 4:
-        return 7
-
-
+    if move == 3:
+        return (move,0)
 
 
     #return "foo"
@@ -49,6 +52,7 @@ def scoreHand(hand, tokens):
     #print(tokens)
     #print(hand)
     maxScore = 0
+    pos= -1
     # for each good in hand:
     for i in range(5, -1, -1):
         #print(i)
@@ -68,7 +72,8 @@ def scoreHand(hand, tokens):
                 sum += 9
             if sum > maxScore:
                 maxScore = sum
-    return maxScore
+                pos = i
+    return (maxScore,pos)
 
 # check pick up value
 # for each good in market
@@ -82,8 +87,9 @@ def getCard(hand, market, tokens):
             temphand = copy.deepcopy(hand)
             temphand[i] += 1
             tempScore = scoreHand(temphand,tokens)
-            if tempScore > maxScore[0]:
-                maxScore = (tempScore, i)
+            #print(tempScore)
+            if tempScore > maxScore:
+                maxScore = tempScore
     return maxScore
 
 # check swap value
@@ -94,15 +100,17 @@ def SwapCards(hand, market, tokens):
     # determine cards to swap
     posSwaps = []
     secondCheck(bestSwap, hand)
-
     for i in range (0,6):
         if market[i] > 1:
             posSwaps.append(i)
-
+    if not posSwaps:
+        return (-1,[])
     for j in posSwaps:
         temphand = copy.deepcopy(hand)
         temphand[j] = temphand[j] + market[j]
-        tempScore = scoreHand(temphand, tokens)
+        temp = scoreHand(temphand, tokens)
+        tempScore = temp[0]
+        #print (tempScore)
         if tempScore > maxScore:
             maxScore = tempScore
             bestSwap = j
@@ -134,9 +142,10 @@ def SwapCards(hand, market, tokens):
 def balanceSwap(swap, hand):
     handSz = 0
     getting = swap.index(max(swap))
+
     for i in range(0,6):
         handSz += hand[i]
-    if handSz < 7:
+    if handSz > 7:
         overLimit(swap, hand,handSz,getting)
     else:
         simpleSwap(swap, hand, getting)
@@ -181,6 +190,7 @@ def secondCheck(bestSwap, hand):
     return True
 
 def simpleSwap(swap, hand, getting):
+    print(swap, hand)
     if (hand[6] > getting):
         swap[6] = -swap[getting]
     else:
