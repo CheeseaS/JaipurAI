@@ -75,8 +75,8 @@ class Game:
                 self.playerScores[player] += self.gTokens[pos].pop()
 
         # If they are selling 3 or more then they get BONUS TOKENS!!! YAY
-        if self.playerHands[player][pos] > 2 and [self.playerHands[player][pos] - 2]:
-            self.playerBTScores[player] += self.bTokens[self.playerHands[player][pos] - 3].pop()
+        if self.playerHands[player][pos] > 2 and len(self.bTokens[(5 if self.playerHands[player][pos] >= 5 else self.playerHands[player][pos])- 3]) != 0:
+            self.playerBTScores[player] += self.bTokens[(5 if self.playerHands[player][pos] >= 5 else self.playerHands[player][pos]) - 3].pop()
 
         self.playerHands[player][pos] = 0
 
@@ -99,7 +99,7 @@ class Game:
     def takegood(self, player, pos):
         tmp = 0
         # count the number of cards already in the user's hand, they can't have more that 7 non-camel cards
-        for i in range(6):
+        for i in range(7):
             # camels don't count
             if i != 6:
                 tmp += self.playerHands[player][i]
@@ -131,12 +131,20 @@ class Game:
                 validexchange = False
                 break
 
+
         # You can't take camels with this move
         if goods[6] > 0:
             validexchange = False
 
         # The player must trade as many good as they are getting and vice-versa
         if tmp != 0:
+            validexchange = False
+
+        # Checks to make sure the trade doesn't put the player above 7 cards in hand.
+        t = 0
+        for j in range(6):
+            t += self.playerHands[player][j] + goods[j]
+        if t > 7:
             validexchange = False
 
         # If the exchange is valid the we will let it go through
