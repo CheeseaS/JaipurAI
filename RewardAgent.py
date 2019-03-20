@@ -1,10 +1,17 @@
 #import Game
 import copy
 
+
+#fix invalid sales
+
 # reward based agent
 def GenerateMove(hand, market, tokens):
     #handscore = max(goodVal)
-    print (hand)
+
+
+    for h in range (0,5):
+        if hand[h] >=5:
+            return (3,h)
     getScore = (0,0)
     swapScore = (0,0)
     scoreMat = [-1 , -1, -1, -1]
@@ -22,25 +29,29 @@ def GenerateMove(hand, market, tokens):
             scoreMat[1] = -1
         else:
             scoreMat[1] = swapScore[0]
-    sell = -1
-    most = 0
-    for i in range(5,-1,-1):
-        if hand[i] > most:
-            sell = i
-            most = hand[i]
-    scoreMat[3] = hand[6]
-    if handScore[1] >2 and hand[handScore[1]]:
-        sell = -1
-    scoreMat[2] = sell
-    #print(scoreMat)
+    sellgood = sell(hand,tokens)
+    scoreMat[2] = sellgood[0]
+    scoreMat[3] = market[6]
+
     move = scoreMat.index(max(scoreMat))
-    #print (move)
+
+    if move == 0 and getScore[1] == -1:
+        for i in range (5,-1,-1):
+            if market[i] >0:
+                return (0,i)
+
     if move == 0:
+        if getScore[1] == -1:
+            print("get fail")
         return (move,getScore[1])
     if move == 1:
+        if swapScore[1] == -1:
+            print("swap fail")
         return (move,swapScore[1])
     if move == 2:
-       return (move, sell)
+        if sellgood[1] == -1:
+            print("sell fail")
+        return (move, sellgood[1])
     if move == 3:
         return (move,0)
 
@@ -49,8 +60,6 @@ def GenerateMove(hand, market, tokens):
 
 # check score in hand
 def scoreHand(hand, tokens):
-    #print(tokens)
-    #print(hand)
     maxScore = 0
     pos= -1
     # for each good in hand:
@@ -62,7 +71,8 @@ def scoreHand(hand, tokens):
                 stSz = len(tokens[i]) - 1
                 # check current point value for good
                 for j in range(0,hand[i]):
-                    sum += tokens[i][(stSz - j)]
+                    if stSz - j >= 0:
+                        sum += tokens[i][(stSz - j)]
             # if bonus value applies, add value
             if hand[i] == 3:
                 sum += 2
@@ -80,17 +90,32 @@ def scoreHand(hand, tokens):
 # generate hands based on player hand plus 1 good in market place
 # store max score and associated move
 def getCard(hand, market, tokens):
-    maxScore = (0,0)
+    maxScore = 0
+    validtakes = []
+    besttrade = -1
     # for valid moves generate handscores:
-    for i in range(6, -1,-1):
-        if market[i] != 0:
-            temphand = copy.deepcopy(hand)
-            temphand[i] += 1
-            tempScore = scoreHand(temphand,tokens)
-            #print(tempScore)
-            if tempScore > maxScore:
-                maxScore = tempScore
-    return maxScore
+    for i in range (5, -1,-1):
+        if market[i] > 0:
+            validtakes.append(i)
+
+    for j in validtakes:
+        temphand = copy.deepcopy(hand)
+        temphand[j] += 1
+
+        tempScore = 0
+        if (tokens[j]):
+            stSz = len(tokens[j]) - 1
+            # check current point value for good
+            for k in range(0, hand[j]):
+                if stSz-k >= 0:
+                    tempScore += tokens[j][(stSz - k)]
+
+        if tempScore > maxScore:
+            maxScore = tempScore
+            besttrade = j
+    #if besttrade == -1:
+        #print("get failed")
+    return maxScore,besttrade
 
 # check swap value
 def SwapCards(hand, market, tokens):
@@ -110,7 +135,6 @@ def SwapCards(hand, market, tokens):
         temphand[j] = temphand[j] + market[j]
         temp = scoreHand(temphand, tokens)
         tempScore = temp[0]
-        #print (tempScore)
         if tempScore > maxScore:
             maxScore = tempScore
             bestSwap = j
@@ -125,6 +149,10 @@ def SwapCards(hand, market, tokens):
     if not GTS and hand[6] > market[bestSwap]:
         qty = market[bestSwap]
         temphand[6] -= qty
+
+    if swapcheck(swap,hand, market) == False:
+        #print("invalid swap")
+        return (-1,-1)
     return (maxScore,swap)
     #handsize check
     #find cards to swap
@@ -190,7 +218,7 @@ def secondCheck(bestSwap, hand):
     return True
 
 def simpleSwap(swap, hand, getting):
-    print(swap, hand)
+    #print(swap, hand)
     if (hand[6] > getting):
         swap[6] = -swap[getting]
     else:
@@ -215,7 +243,44 @@ def simpleSwap(swap, hand, getting):
                     remaining = 0
 
 
+def swapcheck(swap, hand, market):
+    tmp = 0
+    for i in range (0,7):
+        tmp += hand[i]
+    if tmp != 0:
+        return False
+    if (max(swap) < 2):
+        return False
+    for j in range (0,6):
+        tmp = hand[j] + swap[j]
+        if tmp <= -1:
+            return False
+    return True
+
+def sell(hand, tokens):
+    maxpts = 0
+    good = -1
+    for i in range(0,6):
+        if (i > 2) and (hand[i] < 2):
+            continue
+        sum = 0
+        if hand[i] != 0:
+            tmp = hand[i]
+            stackSz = len(tokens[i]) - 1
+
+            for j in range (0,tmp):
+                if stackSz - j >= 0:
+                    sum += tokens[i][(stackSz - j)]
+        if sum > maxpts:
+            maxpts = sum
+            good = i
+        #if good == -1:
+            #print ("sell failure")
+    return (maxpts,good)
 # if (market[i] >= 2)
+
+
+
 
 # camels + goods[!max]
 # if (swap > get)
