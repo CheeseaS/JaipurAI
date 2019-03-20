@@ -52,12 +52,12 @@ while ( not newGame.isgameover()):
     if not p2movecheck:
         print(p2movecheck, "move: ", move[0], "player: ", player, "arg: ", move[1], "hand: ", p2hand, "market: ", market)
         break
-    print(newGame.getscore(0))
-    print(newGame.getscore(1))
+    #print(newGame.getscore(0))
+    #print(newGame.getscore(1))
 
 
-#print (newGame.getscore(0))
-#print (newGame.getscore(1))
+print (newGame.getscore(0))
+print (newGame.getscore(1))
 
 '''
 #hand = [0,1,3,1,0,0,3]

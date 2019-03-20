@@ -11,7 +11,7 @@ def GenerateMove(hand, market, tokens):
 
     for h in range (0,5):
         if hand[h] >=5:
-            return (3,h)
+            return (2,h)
     getScore = (0,0)
     swapScore = (0,0)
     scoreMat = [-1 , -1, -1, -1]
@@ -31,14 +31,18 @@ def GenerateMove(hand, market, tokens):
             scoreMat[1] = swapScore[0]
     sellgood = sell(hand,tokens)
     scoreMat[2] = sellgood[0]
-    scoreMat[3] = market[6]
+    if market[6] >0:
+        scoreMat[3] = market[6]
+    else:
+        scoreMat[3] = -1
 
     move = scoreMat.index(max(scoreMat))
 
-    if move == 0 and getScore[1] == -1:
+    if (move == 0 and getScore[1] == -1) or (move == 3 and market[6] == 0):
         for i in range (5,-1,-1):
-            if market[i] >0:
-                return (0,i)
+            if market[i] > 0:
+                move = 0
+                return (move,i)
 
     if move == 0:
         if getScore[1] == -1:
@@ -53,7 +57,7 @@ def GenerateMove(hand, market, tokens):
             print("sell fail")
         return (move, sellgood[1])
     if move == 3:
-        return (move,0)
+        return (move,scoreMat[3])
 
 
     #return "foo"
